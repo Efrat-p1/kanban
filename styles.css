@@ -1,0 +1,32 @@
+/* Global scrollbar rules */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #e4e4e7; /* zinc-200 */
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #d4d4d8; /* zinc-300 */
+}
+
+/* Column active hover styles during drag */
+.drag-hover {
+  background-color: rgba(99, 102, 241, 0.04) !important;
+  border-color: rgba(99, 102, 241, 0.3) !important;
+}
+
+/* Disable pointer events on card children during drag to prevent drop glitches */
+.dragging-active .task-card-content {
+  pointer-events: none;
+}
+
+/* Pulse effect for drag target highlight */
+.drag-target-highlight {
+  outline: 2px dashed rgba(99, 102, 241, 0.4);
+  outline-offset: -2px;
+}
