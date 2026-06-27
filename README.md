@@ -48,13 +48,40 @@ Then open your browser and navigate to:
 
 ---
 
+## 💻 System Requirements / דרישות מערכת
+
+### English
+* **Modern Web Browser**: Chrome 90+, Edge 90+, Firefox 90+, Safari 15+, or any other browser supporting ES5/ES6 and standard CSS.
+* **Storage Permission**: Local storage enabled (essential for task persistence across page loads).
+* **Internet Connection**: Optional. An active connection is needed during the first load to pull Tailwind CSS (CDN Play) and Google Fonts.
+* **Optional Server (Recommended)**: Python 3+ or another static HTTP server tool for local deployment (needed to run Option B).
+
+### עברית
+* **דפדפן אינטרנט מודרני**: Chrome 90+, Edge 90+, Firefox 90+, Safari 15+, או כל דפדפן אחר התומך ב-ES5/ES6 ו-CSS סטנדרטי.
+* **הרשאות אחסון**: Local Storage מופעל בדפדפן (חיוני עבור שמירת המשימות בין טעינות עמודים).
+* **חיבור לאינטרנט**: אופציונלי. חיבור פעיל נדרש בטעינה הראשונה כדי למשוך את Tailwind CSS (CDN Play) ופונטים של Google.
+* **שרת אופציונלי (מומלץ)**: Python 3+ או כל כלי שרת HTTP סטטי אחר להרצה מקומית (נדרש להרצת אפשרות ב').
+
+---
+
 ## 📂 File Structure
 
 ```
 3_kanban/
 │
-├── index.html        # Main self-contained application (HTML, CSS, JS)
-└── README.md         # Documentation file
+├── js/                   # Modular application logic files
+│   ├── helpers.js        # Core helper utilities (XSS escaping, avatar hashes)
+│   ├── state.js          # App state registry, persistence and dependency validation
+│   ├── dom.js            # CSS dictionaries and DOM cache element getters
+│   ├── filters.js        # Multi-select filters, sort triggers and state resets
+│   ├── board.js          # Board visual rendering, grouping and card generation
+│   ├── modals.js         # Dialog modal controller layers and theme switches
+│   └── events.js         # Listeners setup, hotkeys and native drag-and-drop
+│
+├── index.html            # Main HTML layout structure
+├── styles.css            # Custom CSS styling and scrollbars
+├── app.js                # Bootstrap orchestrator and HTML inline variables mapper
+└── README.md             # Documentation file
 ```
 
 ---
