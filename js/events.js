@@ -1,8 +1,9 @@
 /**
  * Kanban board drag-and-drop, keyboard shortcuts, and layout events setup
  */
+var KanbanEvents;
 (function() {
-  window.KanbanEvents = {
+  KanbanEvents = window.KanbanEvents = {
     /**
      * Set up main page event listeners (input search, backdrop click closing)
      */
@@ -41,12 +42,7 @@
         });
       }
 
-      const depErrorModal = document.getElementById('dependency-error-modal');
-      if (depErrorModal) {
-        depErrorModal.addEventListener('click', (e) => {
-          if (e.target === e.currentTarget) KanbanModals.closeDependencyErrorModal();
-        });
-      }
+
 
       // Close actions dropdown on click outside
       document.addEventListener('click', (e) => {
@@ -183,6 +179,7 @@
       if (col) col.classList.remove('drag-hover');
 
       const taskId = e.dataTransfer.getData('text/plain');
+      console.log("events.js: handleDrop entered. retrieved taskId:", taskId, "targetStatus:", targetStatus);
       const task = KanbanState.tasks.find(t => t.id === taskId);
       
       if (task) {
@@ -190,13 +187,22 @@
         if (oldStatus !== targetStatus) {
           // Dependency constraint logic: moving to Doing or Done
           if (targetStatus === 'Doing' || targetStatus === 'Done') {
+            console.log("events.js: drag drop detected. Checking dependencies for task:", task.title, "moving to:", targetStatus);
             const blocking = KanbanState.checkDependenciesCompleted(task);
+            console.log("events.js: blocking dependencies array:", blocking);
             if (blocking.length > 0) {
+              console.warn("events.js: Task is blocked! Reverting status to To Do and calling showDependencyError.");
               // Forced back to To Do
               task.status = 'To Do';
               KanbanState.saveTasks();
-              KanbanModals.showDependencyError(task.title, blocking);
               KanbanBoard.renderBoard();
+              
+              // Defer opening the modal by a few milliseconds.
+              // This prevents a "ghost click" from the drag-and-drop mouse release 
+              // from instantly firing on the modal backdrop and closing it.
+              setTimeout(() => {
+                KanbanModals.showDependencyError(task.title, blocking);
+              }, 100);
               return;
             }
           }

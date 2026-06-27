@@ -1,6 +1,7 @@
 /**
  * Kanban board state management
  */
+var KanbanState;
 (function() {
   const nowTimestamp = Date.now();
   const id1 = (nowTimestamp - 3600000 * 3).toString(); // Database maintenance (To Do)
@@ -166,7 +167,7 @@
     }
   ];
 
-  window.KanbanState = {
+  KanbanState = window.KanbanState = {
     // App State properties
     tasks: [],
     activeDragTaskId: null,
@@ -224,16 +225,19 @@
      * @returns {string[]} titles of blocking uncompleted tasks
      */
     checkDependenciesCompleted(task) {
+      console.log("state.js: checkDependenciesCompleted called for task:", task.title, "dependencies list:", task.dependencies);
       const deps = task.dependencies || [];
       const uncompleted = [];
 
       deps.forEach(depId => {
         const depTask = this.tasks.find(t => t.id === depId);
+        console.log("state.js: evaluating dependency ID:", depId, "found task:", depTask ? depTask.title : null, "status:", depTask ? depTask.status : null);
         if (!depTask || depTask.archived || depTask.status !== 'Done') {
           uncompleted.push(depTask ? depTask.title : `Unknown Task (#${depId})`);
         }
       });
 
+      console.log("state.js: uncompleted dependencies for task:", task.title, "is:", uncompleted);
       return uncompleted;
     },
 

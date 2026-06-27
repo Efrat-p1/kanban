@@ -14,6 +14,7 @@
   window.wipeBoard = () => KanbanFilters.wipeBoard();
   window.loadDemoData = () => KanbanFilters.loadDemoData();
   window.expandAllTasks = (expanded) => KanbanFilters.expandAllTasks(expanded);
+  window.renderBoard = () => KanbanBoard.renderBoard();
 
   // Global Modals handlers
   window.openCreateModal = () => KanbanModals.openCreateModal();

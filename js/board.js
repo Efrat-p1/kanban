@@ -1,8 +1,9 @@
 /**
  * Kanban board layout renderer and task card component generator
  */
+var KanbanBoard;
 (function() {
-  window.KanbanBoard = {
+  KanbanBoard = window.KanbanBoard = {
     /**
      * Main render entrypoint: Filter, sort, group, and draw task cards
      */
@@ -69,6 +70,25 @@
           columnData.list.appendChild(card);
         });
       });
+
+      // 3. Update Summary Bar
+      const totalTasks = KanbanState.tasks.filter(t => !t.archived).length;
+      const filteredTasks = filtered.length;
+      const highTasks = filtered.filter(t => t.priority === 'high').length;
+      const mediumTasks = filtered.filter(t => t.priority === 'medium').length;
+      const lowTasks = filtered.filter(t => t.priority === 'low').length;
+      
+      const elTotal = document.getElementById('summary-total-tasks');
+      const elShowing = document.getElementById('summary-showing-tasks');
+      const elHigh = document.getElementById('summary-high-priority');
+      const elMedium = document.getElementById('summary-medium-priority');
+      const elLow = document.getElementById('summary-low-priority');
+      
+      if (elTotal) elTotal.textContent = totalTasks;
+      if (elShowing) elShowing.textContent = filteredTasks;
+      if (elHigh) elHigh.textContent = highTasks;
+      if (elMedium) elMedium.textContent = mediumTasks;
+      if (elLow) elLow.textContent = lowTasks;
     },
 
     /**
@@ -86,10 +106,11 @@
       
       card.addEventListener('dragstart', (e) => KanbanEvents.handleDragStart(e, task.id));
       card.addEventListener('dragend', (e) => KanbanEvents.handleDragEnd(e));
-      card.addEventListener('click', () => KanbanModals.openDetailModal(task.id));
+      card.addEventListener('dblclick', () => KanbanModals.openDetailModal(task.id));
 
       const userAvatarStyle = KanbanHelpers.getAvatarStyle(task.assignee);
       const isBlocked = KanbanState.isTaskBlocked(task);
+      const blockingTitles = isBlocked ? KanbanState.checkDependenciesCompleted(task) : [];
 
       if (task.expanded) {
         card.innerHTML = `
@@ -103,15 +124,27 @@
               </button>
             </div>
             ${task.description && task.description.trim() ? `<p class="text-[11px] text-zinc-500 dark:text-zinc-400 line-clamp-2 leading-relaxed font-normal">${KanbanHelpers.escapeHTML(task.description)}</p>` : ''}
+            
+            ${isBlocked ? `
+              <div class="text-[10px] text-rose-700 dark:text-rose-450 bg-rose-50/50 dark:bg-rose-950/20 border border-rose-150 dark:border-rose-900/40 rounded p-1.5 space-y-0.5 select-text">
+                <div class="font-semibold flex items-center gap-1 select-none">
+                  <span>🔒 Requires:</span>
+                </div>
+                <ul class="list-disc pl-3.5 space-y-0.5 font-medium">
+                  ${blockingTitles.map(title => `<li>${KanbanHelpers.escapeHTML(title)}</li>`).join('')}
+                </ul>
+              </div>
+            ` : ''}
+
             <div class="flex items-center justify-between pt-1 border-t border-zinc-200 dark:border-zinc-800 mt-1.5">
               <div class="flex items-center gap-1.5">
                 <span class="w-3.5 h-3.5 rounded-full ${userAvatarStyle} border flex items-center justify-center text-[9px] font-bold shrink-0" title="${KanbanHelpers.escapeHTML(task.assignee)}">
-                  ${KanbanHelpers.escapeHTML(KanbanHelpers.getInitials(task.assignee))}
+                   ${KanbanHelpers.escapeHTML(KanbanHelpers.getInitials(task.assignee))}
                 </span>
                 <span class="text-[10px] text-zinc-500 dark:text-zinc-450 max-w-[80px] truncate" title="${KanbanHelpers.escapeHTML(task.assignee)}">${KanbanHelpers.escapeHTML(task.assignee)}</span>
               </div>
               <div class="flex items-center gap-1.5">
-                ${isBlocked ? `<span class="text-[9px] text-rose-700 dark:text-rose-450 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/60 px-1 py-0.5 rounded font-semibold flex items-center gap-0.5" title="Blocked by dependencies">🔒 Blocked</span>` : ''}
+                ${isBlocked ? `<span class="text-[9px] text-rose-700 dark:text-rose-450 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/60 px-1 py-0.5 rounded font-semibold flex items-center gap-0.5" title="Requires: ${KanbanHelpers.escapeHTML(blockingTitles.join(', '))}">🔒 Blocked</span>` : ''}
                 <span class="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded border ${KanbanDOM.priorityColors[task.priority].badge}">
                   ${task.priority}
                 </span>
@@ -124,14 +157,14 @@
           <div class="task-card-content flex items-center justify-between gap-2">
             <span class="w-1.5 h-1.5 rounded-full ${KanbanDOM.priorityColors[task.priority].dot} shrink-0"></span>
             <h3 class="text-xs font-medium text-zinc-700 dark:text-zinc-300 group-hover:text-zinc-900 dark:group-hover:text-white transition-colors truncate flex-1 leading-tight select-none flex items-center gap-1">
-              ${isBlocked ? '<span class="text-rose-600 dark:text-rose-450 text-[10px] shrink-0" title="Blocked by dependencies">🔒</span>' : ''}
+              ${isBlocked ? `<span class="text-rose-600 dark:text-rose-450 text-[10px] shrink-0" title="Requires: ${KanbanHelpers.escapeHTML(blockingTitles.join(', '))}">🔒</span>` : ''}
               ${KanbanHelpers.escapeHTML(task.title)}
             </h3>
             <div class="flex items-center gap-1.5 shrink-0">
               <span class="w-3.5 h-3.5 rounded-full ${userAvatarStyle} border flex items-center justify-center text-[8px] font-bold shrink-0" title="${KanbanHelpers.escapeHTML(task.assignee)}">
                 ${KanbanHelpers.escapeHTML(KanbanHelpers.getInitials(task.assignee))}
               </span>
-              <button type="button" class="chevron-toggle text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 focus:outline-none transition-colors" title="Expand card">
+              <button type="button" class="chevron-toggle text-zinc-400 dark:text-zinc-500 hover:text-zinc-650 dark:hover:text-zinc-300 focus:outline-none transition-colors" title="Expand card">
                 <svg class="w-3.5 h-3.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
                 </svg>
@@ -169,7 +202,8 @@
                               task.assignee.toLowerCase().includes(searchQuery);
         
         const matchesPriority = KanbanState.activePriorities.includes(task.priority);
-        const matchesAssignee = KanbanState.activeAssignees.length === 0 || KanbanState.activeAssignees.includes(task.assignee);
+        const matchesAssignee = KanbanState.activeAssignees.length === 0 || 
+                                KanbanState.activeAssignees.includes((task.assignee || '').trim());
         
         let matchesTime = true;
         if (timeFilter !== 'all') {
@@ -212,9 +246,9 @@
         const weight = { high: 3, medium: 2, low: 1 };
         sorted.sort((a, b) => weight[a.priority] - weight[b.priority]);
       } else if (sortBy === 'title-asc') {
-        sorted.sort((a, b) => a.title.localeCompare(b.title));
+        sorted.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
       } else if (sortBy === 'assignee-asc') {
-        sorted.sort((a, b) => a.assignee.localeCompare(b.assignee));
+        sorted.sort((a, b) => (a.assignee || '').trim().localeCompare((b.assignee || '').trim()));
       } else if (sortBy === 'created-desc') {
         sorted.sort((a, b) => Number(b.id) - Number(a.id));
       } else if (sortBy === 'created-asc') {

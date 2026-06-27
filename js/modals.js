@@ -1,10 +1,11 @@
 /**
  * Kanban board modals and dialog controllers
  */
+var KanbanModals;
 (function() {
   let activeDetailTaskId = null;
 
-  window.KanbanModals = {
+  KanbanModals = window.KanbanModals = {
     // Getter for active detail task id (if needed outside)
     get activeDetailTaskId() { return activeDetailTaskId; },
 
@@ -469,24 +470,29 @@
     },
 
     emptyArchive() {
-      if (confirm("Are you sure you want to permanently empty the archive? All archived tasks will be deleted forever.")) {
-        const archivedIds = KanbanState.tasks.filter(t => t.archived).map(t => t.id);
-        
-        // Remove archived tasks
-        KanbanState.tasks = KanbanState.tasks.filter(t => !t.archived);
+      KanbanModals.showConfirmDialog(
+        "Empty Archive?",
+        "Are you sure you want to permanently empty the archive? All archived tasks will be deleted forever.",
+        "Delete All",
+        () => {
+          const archivedIds = KanbanState.tasks.filter(t => t.archived).map(t => t.id);
+          
+          // Remove archived tasks
+          KanbanState.tasks = KanbanState.tasks.filter(t => !t.archived);
 
-        // Clean up dependency lists for remaining tasks
-        KanbanState.tasks.forEach(t => {
-          if (t.dependencies) {
-            t.dependencies = t.dependencies.filter(depId => !archivedIds.includes(depId));
-          }
-        });
+          // Clean up dependency lists for remaining tasks
+          KanbanState.tasks.forEach(t => {
+            if (t.dependencies) {
+              t.dependencies = t.dependencies.filter(depId => !archivedIds.includes(depId));
+            }
+          });
 
-        KanbanState.saveTasks();
-        KanbanModals.populateArchiveList();
-        KanbanFilters.populateAssigneeDropdown();
-        KanbanBoard.renderBoard();
-      }
+          KanbanState.saveTasks();
+          KanbanModals.populateArchiveList();
+          KanbanFilters.populateAssigneeDropdown();
+          KanbanBoard.renderBoard();
+        }
+      );
     },
 
     /* ==========================================================================
@@ -562,34 +568,132 @@
     },
 
     /* ==========================================================================
+       DYNAMIC CONFIRM MODAL (Replaces native window.confirm)
+       ========================================================================== */
+    showConfirmDialog(title, message, confirmText, callback) {
+      // Remove any existing dynamic confirm modal
+      const existing = document.getElementById('dynamic-confirm-modal');
+      if (existing) existing.remove();
+
+      const modal = document.createElement('div');
+      modal.id = 'dynamic-confirm-modal';
+      modal.className = "fixed inset-0 bg-zinc-950/70 flex items-center justify-center p-4 transition-all";
+      modal.style.cssText = "z-index: 2147483647 !important; display: flex !important;";
+      
+      window.closeDynamicConfirmModal = () => {
+        const m = document.getElementById('dynamic-confirm-modal');
+        if (m) m.remove();
+      };
+
+      window.executeDynamicConfirm = () => {
+        window.closeDynamicConfirmModal();
+        if (typeof callback === 'function') callback();
+      };
+
+      const isDestructive = confirmText.toLowerCase().includes('delete') || confirmText.toLowerCase().includes('wipe');
+      const btnClass = isDestructive 
+        ? "bg-rose-600 hover:bg-rose-500 text-white"
+        : "bg-indigo-600 hover:bg-indigo-500 text-white";
+        
+      const iconClass = isDestructive
+        ? "bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900/40"
+        : "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900/40";
+
+      const iconPath = isDestructive
+        ? `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>`
+        : `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>`;
+
+      modal.innerHTML = `
+        <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl rounded-xl w-full max-w-sm overflow-hidden p-5 transform transition-transform duration-200 text-zinc-800 dark:text-zinc-200" onclick="event.stopPropagation()">
+          <div class="flex items-start gap-3">
+            <div class="w-8 h-8 rounded-full ${iconClass} border flex items-center justify-center shrink-0">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                ${iconPath}
+              </svg>
+            </div>
+            <div>
+              <h4 class="text-sm font-semibold text-zinc-900 dark:text-white">${title}</h4>
+              <p class="text-xs text-zinc-550 dark:text-zinc-400 mt-1 leading-normal">${message}</p>
+            </div>
+          </div>
+          <div class="flex justify-end gap-2 pt-2 mt-5">
+            <button onclick="closeDynamicConfirmModal()"
+              class="px-3 py-1.5 border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-medium rounded-lg active:scale-95 transition-colors">
+              Cancel
+            </button>
+            <button onclick="executeDynamicConfirm()"
+              class="px-3 py-1.5 ${btnClass} text-xs font-medium rounded-lg active:scale-95 transition-all font-semibold">
+              ${confirmText}
+            </button>
+          </div>
+        </div>
+      `;
+      
+      modal.onclick = window.closeDynamicConfirmModal;
+
+      setTimeout(() => {
+        document.body.appendChild(modal);
+      }, 10);
+    },
+
+    /* ==========================================================================
        DEPENDENCY ERROR MODAL
        ========================================================================== */
     showDependencyError(taskTitle, blockingTitles) {
-      const taskTitleEl = document.getElementById('blocked-task-title');
-      if (taskTitleEl) taskTitleEl.textContent = taskTitle;
+      console.log("modals.js: dynamically generating dependency error modal for task:", taskTitle);
+      
+      // Remove any existing dynamic modal to prevent duplicates
+      const existing = document.getElementById('dynamic-dependency-modal');
+      if (existing) {
+        existing.remove();
+      }
 
-      const list = document.getElementById('blocking-tasks-list');
-      if (list) {
-        list.innerHTML = '';
-        blockingTitles.forEach(title => {
-          const li = document.createElement('li');
-          li.textContent = title;
-          list.appendChild(li);
-        });
-      }
-      const modal = document.getElementById('dependency-error-modal');
-      if (modal) {
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-      }
-    },
+      // Create modal container
+      const modal = document.createElement('div');
+      modal.id = 'dynamic-dependency-modal';
+      modal.className = "fixed inset-0 bg-zinc-950/70 flex items-center justify-center p-4 transition-all";
+      modal.style.cssText = "z-index: 2147483647 !important; display: flex !important;"; // Max z-index
+      
+      // Global close function
+      window.closeDynamicDependencyModal = () => {
+        const m = document.getElementById('dynamic-dependency-modal');
+        if (m) m.remove();
+      };
 
-    closeDependencyErrorModal() {
-      const modal = document.getElementById('dependency-error-modal');
-      if (modal) {
-        modal.classList.remove('flex');
-        modal.classList.add('hidden');
-      }
+      // Modal HTML structure
+      modal.innerHTML = `
+        <div class="bg-white dark:bg-zinc-900 border border-rose-400 dark:border-rose-800/80 rounded-xl shadow-2xl w-full max-w-md overflow-hidden text-zinc-800 dark:text-zinc-200" onclick="event.stopPropagation()">
+          <div class="bg-rose-50 dark:bg-rose-950/20 border-b border-rose-100 dark:border-rose-900/30 p-4 flex items-center gap-2.5 text-rose-700 dark:text-rose-400">
+            <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+            <h3 class="font-bold text-sm uppercase tracking-wider">Fatal Error: Blocked Task</h3>
+          </div>
+          <div class="p-5 space-y-3">
+            <p class="text-xs text-zinc-700 dark:text-zinc-300 leading-normal">
+              Cannot start work on <strong class="text-zinc-900 dark:text-white">${KanbanHelpers.escapeHTML(taskTitle)}</strong>. 
+              The following pre-requisite tasks must be completed (set to <strong>Done</strong>) first:
+            </p>
+            <ul class="list-disc pl-5 text-xs text-rose-600 dark:text-rose-450 space-y-1 font-medium bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 p-3 rounded-lg max-h-40 overflow-y-auto">
+              ${blockingTitles.map(title => `<li>${KanbanHelpers.escapeHTML(title)}</li>`).join('')}
+            </ul>
+            <p class="text-[11px] text-zinc-500 dark:text-zinc-450 italic">This task has been returned to the <strong>To Do</strong> column.</p>
+          </div>
+          <div class="p-4 border-t border-zinc-200 dark:border-zinc-800 flex justify-end">
+            <button type="button" onclick="window.closeDynamicDependencyModal()" 
+              class="px-4 py-1.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold rounded-lg shadow-md active:scale-95 transition-all cursor-pointer">
+              Acknowledge
+            </button>
+          </div>
+        </div>
+      `;
+      
+      // Close on backdrop click
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) window.closeDynamicDependencyModal();
+      });
+
+      document.body.appendChild(modal);
     },
 
     /* ==========================================================================

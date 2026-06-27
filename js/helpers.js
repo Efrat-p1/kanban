@@ -1,6 +1,7 @@
 /**
  * Kanban board helper utilities
  */
+var KanbanHelpers;
 (function() {
   const avatarColors = [
     'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800/60',
@@ -12,7 +13,7 @@
     'bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-400 border-teal-200 dark:border-teal-800/60'
   ];
 
-  window.KanbanHelpers = {
+  KanbanHelpers = window.KanbanHelpers = {
     /**
      * Escape HTML to prevent XSS vulnerability injection
      * @param {string} str 

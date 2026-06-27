@@ -1,8 +1,9 @@
 /**
  * Kanban board filters and sorting controllers
  */
+var KanbanFilters;
 (function() {
-  window.KanbanFilters = {
+  KanbanFilters = window.KanbanFilters = {
     /**
      * Toggle active state of priority filter pills
      * @param {string} priority 
@@ -147,24 +148,32 @@
      * Clear all board memory permanently
      */
     wipeBoard() {
-      if (confirm("Are you sure you want to permanently delete all tasks (including archived ones)? This action cannot be undone and will clear the board memory.")) {
-        KanbanState.tasks = [];
-        KanbanState.saveTasks();
-        KanbanFilters.populateAssigneeDropdown();
-        KanbanBoard.renderBoard();
-      }
+      KanbanModals.showConfirmDialog(
+        "Wipe Board?",
+        "Are you sure you want to permanently delete all tasks (including archived ones)? This action cannot be undone and will clear the board memory.",
+        "Wipe Board",
+        () => {
+          KanbanState.tasks = [];
+          KanbanState.saveTasks();
+          KanbanFilters.clearAllFilters();
+        }
+      );
     },
 
     /**
      * Overwrite current tasks with mock task list
      */
     loadDemoData() {
-      if (confirm("Are you sure you want to load the 10 demo tasks? This will overwrite your current board state.")) {
-        KanbanState.tasks = JSON.parse(JSON.stringify(KanbanState.mockTasks));
-        KanbanState.saveTasks();
-        KanbanFilters.populateAssigneeDropdown();
-        KanbanBoard.renderBoard();
-      }
+      KanbanModals.showConfirmDialog(
+        "Load Demo Tasks?",
+        "Are you sure you want to load the 10 demo tasks? This will overwrite your current board state.",
+        "Load Demo",
+        () => {
+          KanbanState.tasks = JSON.parse(JSON.stringify(KanbanState.mockTasks));
+          KanbanState.saveTasks();
+          KanbanFilters.clearAllFilters();
+        }
+      );
     },
 
     /**

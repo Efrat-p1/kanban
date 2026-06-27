@@ -1,8 +1,9 @@
 /**
  * Kanban board DOM element caching and styles mapping
  */
+var KanbanDOM;
 (function() {
-  window.KanbanDOM = {
+  KanbanDOM = window.KanbanDOM = {
     // Priority colors styling dictionary
     priorityColors: {
       low: {
